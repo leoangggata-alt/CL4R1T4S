@@ -1,5 +1,7 @@
 # CL4R1T4S
 
+> Per-provider working briefs (slot maps, guardrails, injection surfaces): [AGENT-INDEX.md](AGENT-INDEX.md)
+
 AI SYSTEMS TRANSPARENCY AND OBSERVABILITY FOR ALL! Full extracted system prompts, guidelines, and tools from OpenAI, Google, Anthropic, xAI, Perplexity, Cursor, Windsurf, Devin, Manus, Replit, and more – virtually all major AI models + agents! 
 
 📌 Why This Exists
