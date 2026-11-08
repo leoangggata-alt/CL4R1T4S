@@ -1,0 +1,286 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>brief — dua kolom</title>
+<style>
+  :root{
+    --bg:#0d1117; --panel:#141a22; --line:#243040; --ink:#d7e0ea; --dim:#7d8b9c;
+    --accent:#5ad1c0; --warn:#e2b04a; --bad:#e06c75; --mono:ui-monospace,"Cascadia Mono",Consolas,monospace;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.55 var(--mono)}
+  header{display:flex;gap:8px;align-items:center;padding:10px 14px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+  .brand{font-weight:700;letter-spacing:.06em;color:var(--accent);margin-right:6px}
+  select,input,textarea,button{font:inherit;color:var(--ink);background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:6px 8px}
+  button{cursor:pointer}
+  button:hover{border-color:var(--accent)}
+  button.primary{background:var(--accent);color:#08110f;font-weight:700;border-color:var(--accent)}
+  button:disabled{opacity:.5;cursor:not-allowed}
+  .grow{flex:1}
+  .dim{color:var(--dim)}
+  .badge{font-size:11px;padding:1px 6px;border-radius:99px;border:1px solid var(--line)}
+  .badge.lulus{color:var(--accent);border-color:var(--accent)}
+  .badge.gagal{color:var(--warn);border-color:var(--warn)}
+  .badge.mati{color:var(--bad);border-color:var(--bad)}
+  main{display:grid;grid-template-columns:320px 1fr;height:calc(100vh - 52px)}
+  aside{border-right:1px solid var(--line);padding:12px;overflow:auto;display:flex;flex-direction:column;gap:10px}
+  section{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--line)}
+  .col{background:var(--bg);display:flex;flex-direction:column;min-width:0}
+  .col header{border:0;padding:8px 12px;gap:6px;font-size:12px}
+  .out{padding:12px;white-space:pre-wrap;overflow:auto;flex:1;word-break:break-word}
+  .foot{padding:8px 12px;border-top:1px solid var(--line);display:flex;gap:6px;align-items:center;font-size:12px}
+  label{font-size:12px;color:var(--dim);display:block;margin-bottom:3px}
+  textarea{width:100%;resize:vertical}
+  #payload{height:180px}
+  #brief{height:140px;font-size:12px}
+  .row{display:flex;gap:6px}
+  .row>*{flex:1;min-width:0}
+  #hist{font-size:12px;display:flex;flex-direction:column;gap:4px}
+  #hist div{cursor:pointer;color:var(--dim);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  #hist div:hover{color:var(--accent)}
+  .toast{position:fixed;right:12px;bottom:12px;background:var(--panel);border:1px solid var(--accent);
+         padding:8px 12px;border-radius:6px;opacity:0;transition:.2s;pointer-events:none}
+  .toast.on{opacity:1}
+</style>
+</head>
+<body>
+<header>
+  <span class="brand">brief</span>
+  <button id="savekey" class="primary">uji sambung A</button>
+  <span id="keystat" class="dim">key A: –</span>
+  <input id="baseA" class="grow" placeholder="base url A" spellcheck="false">
+  <span class="grow"></span>
+  <span id="tick" class="dim">siap</span>
+</header>
+
+<main>
+  <aside>
+    <div>
+      <label for="provA">provider A</label>
+      <select id="provA"></select>
+    </div>
+    <div>
+      <label for="modelA">model A</label>
+      <input id="modelA" placeholder="gpt-5" spellcheck="false">
+    </div>
+    <div>
+      <label for="keyA">api key A (kosong = pakai env)</label>
+      <input id="keyA" type="password" placeholder="sk-…" spellcheck="false">
+    </div>
+    <hr style="border:0;border-top:1px solid var(--line)">
+    <div>
+      <label for="provB">provider B (opsional)</label>
+      <select id="provB"><option value="">— tanpa pembanding —</option></select>
+    </div>
+    <div class="row">
+      <div><label for="modelB">model B</label><input id="modelB" spellcheck="false"></div>
+    </div>
+    <div>
+      <label for="keyB">api key B</label>
+      <input id="keyB" type="password" placeholder="sk-…" spellcheck="false">
+    </div>
+    <hr style="border:0;border-top:1px solid var(--line)">
+    <div>
+      <label for="preset">payload preset</label>
+      <select id="preset"><option value="">— tulis sendiri —</option></select>
+    </div>
+    <div>
+      <label for="payload">payload</label>
+      <textarea id="payload" spellcheck="false" placeholder="isi tugas…"></textarea>
+    </div>
+    <div class="row">
+      <button id="savepayload">simpan payload</button>
+      <button id="run" class="primary">run</button>
+    </div>
+    <label style="display:flex;gap:6px;align-items:center;margin:0">
+      <input id="usebrief" type="checkbox" checked style="flex:0"> pasang brief otomatis
+    </label>
+    <div>
+      <label for="brief">brief (terisi dari agent.md provider A)</label>
+      <textarea id="brief" spellcheck="false"></textarea>
+    </div>
+    <hr style="border:0;border-top:1px solid var(--line)">
+    <label>riwayat</label>
+    <div id="hist"></div>
+  </aside>
+
+  <section>
+    <div class="col">
+      <header>
+        <span id="headA" class="dim">A</span>
+        <span class="grow"></span>
+        <span id="badgeA"></span>
+        <span id="timeA" class="dim"></span>
+      </header>
+      <div id="outA" class="out"></div>
+      <div class="foot">
+        <button data-v="lulus" data-s="A">lulus</button>
+        <button data-v="gagal" data-s="A">gagal</button>
+        <button data-v="mati" data-s="A">mati</button>
+      </div>
+    </div>
+    <div class="col">
+      <header>
+        <span id="headB" class="dim">B</span>
+        <span class="grow"></span>
+        <span id="badgeB"></span>
+        <span id="timeB" class="dim"></span>
+      </header>
+      <div id="outB" class="out"></div>
+      <div class="foot">
+        <button data-v="lulus" data-s="B">lulus</button>
+        <button data-v="gagal" data-s="B">gagal</button>
+        <button data-v="mati" data-s="B">mati</button>
+      </div>
+    </div>
+  </section>
+</main>
+<div id="toast" class="toast"></div>
+
+<script>
+const $ = s => document.querySelector(s);
+const api = (p, o) => fetch(p, o).then(r => r.json());
+let boot = null;
+
+function toast(m){ const t=$('#toast'); t.textContent=m; t.classList.add('on'); setTimeout(()=>t.classList.remove('on'), 1600); }
+
+function fillProviders(provs){
+  const names = Object.keys(provs).sort();
+  for (const id of ['#provA','#provB']){
+    const sel = $(id);
+    const keep = sel.value;
+    sel.innerHTML = id === '#provB' ? '<option value="">— tanpa pembanding —</option>' : '';
+    for (const n of names){
+      const o = document.createElement('option'); o.value = n; o.textContent = n; sel.appendChild(o);
+    }
+    if (keep) sel.value = keep;
+  }
+}
+
+function badge(side, st){
+  const b = $('#badge' + side);
+  b.className = 'badge ' + (st?.verdict || '');
+  b.textContent = st ? st.verdict : '';
+  b.title = st ? `${st.at} ${st.note || ''}` : '';
+}
+
+async function loadBrief(){
+  const p = $('#provA').value;
+  $('#headA').textContent = p;
+  if (!p) return;
+  const r = await api('/api/brief?provider=' + encodeURIComponent(p));
+  $('#brief').value = r.brief || '';
+  $('#badgeA').className = '';
+  badge('A', boot.state[p]);
+  $('#baseA').value = boot.providers[p].base;
+  $('#keystat').textContent = 'key A: ' + (boot.providers[p].hasKey ? boot.providers[p].keyMask : '–');
+}
+
+async function loadHist(){
+  const r = await api('/api/runs');
+  const box = $('#hist');
+  box.innerHTML = '';
+  for (const it of r.runs){
+    const d = document.createElement('div');
+    d.textContent = it.name;
+    d.onclick = async () => {
+      const t = await api('/api/run?name=' + encodeURIComponent(it.name));
+      $('#outA').textContent = t.text;
+    };
+    box.appendChild(d);
+  }
+}
+
+async function saveKey(side){
+  const p = $(side === 'A' ? '#provA' : '#provB').value;
+  if (!p) return toast('pilih provider dulu');
+  const key = $(side === 'A' ? '#keyA' : '#keyB').value;
+  const base = $('#baseA').value;
+  await api('/api/config', { method:'POST', headers:{'content-type':'application/json'},
+    body: JSON.stringify({ provider:p, key, base: side === 'A' ? base : undefined }) });
+  if (p === $('#provA').value){
+    $('#keystat').textContent = 'key A: ' + (key ? key.slice(0,6) + '…' : 'tersimpan');
+    $('#keyA').value = '';
+  } else { $('#keyB').value = ''; toast('key B tersimpan'); }
+  toast('provider ' + p + ' tersimpan');
+}
+
+async function savePayload(){
+  const name = prompt('nama file payload', 'payload_' + Date.now() + '.txt');
+  if (!name) return;
+  toast('tersimpan: ' + name + ' (tulis manual ke payloads/ lalu muat ulang)');
+}
+
+async function run(){
+  const payload = $('#payload').value.trim();
+  const provA = $('#provA').value, modelA = $('#modelA').value.trim();
+  const provB = $('#provB').value, modelB = $('#modelB').value.trim();
+  if (!payload || !provA || !modelA) return toast('payload, provider A, model A wajib');
+
+  $('#outA').textContent = ''; $('#outB').textContent = '';
+  $('#timeA').textContent = ''; $('#timeB').textContent = '';
+  const sides = [{ provider:provA, model:modelA }];
+  if (provB && modelB) sides.push({ provider:provB, model:modelB });
+  $('#run').disabled = true; $('#tick').textContent = 'jalan…';
+
+  const res = await fetch('/api/run', { method:'POST', headers:{'content-type':'application/json'},
+    body: JSON.stringify({ payload, sides, useBrief: $('#usebrief').checked, brief: $('#brief').value }) });
+
+  const rd = res.body.getReader(), dec = new TextDecoder();
+  let buf = '';
+  while (true){
+    const { value, done } = await rd.read();
+    if (done) break;
+    buf += dec.decode(value, { stream:true });
+    const frames = buf.split('\n\n');
+    buf = frames.pop();
+    for (const f of frames){
+      const m = f.match(/^data: (.*)$/m);
+      if (!m) continue;
+      let j; try { j = JSON.parse(m[1]); } catch { continue; }
+      if (j.text){ ($('#out' + j.side)).textContent += j.text; ($('#out' + j.side)).scrollTop = 1e9; }
+      if (j.sec) $('#time' + j.side).textContent = j.sec + 's';
+    }
+  }
+  $('#run').disabled = false; $('#tick').textContent = 'selesai';
+  loadHist();
+}
+
+$('#provA').onchange = loadBrief;
+$('#provB').onchange = async () => {
+  const p = $('#provB').value;
+  $('#headB').textContent = p || 'B';
+  badge('B', boot.state[p]);
+};
+$('#savekey').onclick = () => saveKey('A');
+$('#savepayload').onclick = savePayload;
+$('#run').onclick = run;
+$('#preset').onchange = async e => {
+  if (!e.target.value) return;
+  const r = await api('/api/payload?name=' + encodeURIComponent(e.target.value));
+  $('#payload').value = r.payload;
+};
+document.querySelectorAll('[data-v]').forEach(b => b.onclick = async () => {
+  const side = b.dataset.s;
+  const p = $(side === 'A' ? '#provA' : '#provB').value;
+  if (!p) return toast('provider ' + side + ' kosong');
+  await api('/api/verdict', { method:'POST', headers:{'content-type':'application/json'},
+    body: JSON.stringify({ provider:p, verdict:b.dataset.v }) });
+  badge(side, { verdict:b.dataset.v, at:'baru saja' });
+  toast(p + ': ' + b.dataset.v);
+});
+
+(async () => {
+  boot = await api('/api/bootstrap');
+  fillProviders(boot.providers);
+  $('#provA').value = 'openai';
+  for (const n of boot.payloads){
+    const o = document.createElement('option'); o.value = n; o.textContent = n; $('#preset').appendChild(o);
+  }
+  await loadBrief(); loadHist();
+})();
+</script>
+</body>
+</html>

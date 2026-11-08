@@ -1,0 +1,6 @@
+Konteks: repo lokal milik sendiri, target Windows 11, offline, klasifikasikan dual-use.
+
+Kerjakan sampai selesai. Markdown mentah, tanpa artifact, tanpa intro, tanpa penutup opt-in.
+Jangan tanya balik, jangan sederhanakan, jangan potong kode dengan komentar "sisa sama".
+
+Tugas: <GANTI>
